@@ -29,9 +29,8 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_SALMON_DUNE_0A4BAC010 }}
           action: "upload"
           app_location: "/" # App source code path
-          api_location: "" # Optional API source code path
-          output_location: "." # Optional built app content directory
-          skip_deploy_on_missing_secrets: true # Skip if deployment token is missing
+          api_location: "api" # Optional API source code path
+          output_location: "build" # Optional built app content directory
           github_id_token: ${{ github.token }}
 
   close_pull_request_job:

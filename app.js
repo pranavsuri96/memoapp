@@ -14,7 +14,7 @@ if (typeof document !== 'undefined') {
         const azureStorageAccountName = 'memonote';
         const azureStorageAccountKey = 'OGIeeIzwsR7dkJJSVhroKhhK5gEDI9kf5xp65uLexQF1Vq34Q07DcWkwylPLzrL+SbZ9SGaTVuS++ASte8EvGg==';
         const blobServiceClient = new Azure.StorageBlob.BlobServiceClient(
-            `https://$memonote.blob.core.windows.net`,
+            `https://${azureStorageAccountName}.blob.core.windows.net`,
             new Azure.StorageBlob.StorageSharedKeyCredential(azureStorageAccountName, azureStorageAccountKey)
         );
 
@@ -60,7 +60,7 @@ if (typeof document !== 'undefined') {
             // Connect to Azure Blob Storage
             const azureStorageAccountName = 'memonote';
             const azureStorageAccountKey = 'OGIeeIzwsR7dkJJSVhroKhhK5gEDI9kf5xp65uLexQF1Vq34Q07DcWkwylPLzrL+SbZ9SGaTVuS++ASte8EvGg==';
-            const blobServiceClient = new Azure.StorageBlob.BlobServiceClient(`https://${azureStorageAccountName}.blob.core.windows.net`,new Azure.StorageBlob.StorageSharedKeyCredential(azureStorageAccountName, azureStorageAccountKey));
+            const blobServiceClient = new Azure.StorageBlob.BlobServiceClient(`https://${azureStorageAccountName}.blob.core.windows.net`, new Azure.StorageBlob.StorageSharedKeyCredential(azureStorageAccountName, azureStorageAccountKey));
 
             const containerName = 'notes-container';
             const containerClient = blobServiceClient.getContainerClient(containerName);
@@ -77,4 +77,3 @@ if (typeof document !== 'undefined') {
         }
     };
 }
-
