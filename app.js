@@ -1,5 +1,5 @@
 if (typeof document !== 'undefined') {
-    document.getElementById('save-note').addEventListener('click', () => {
+    document.getElementById('save-note').addEventListener('click', async () => {
         const noteContent = document.getElementById('note-content').value;
 
         if (!noteContent.trim()) {
@@ -9,10 +9,25 @@ if (typeof document !== 'undefined') {
 
         // Generate a unique ID for the note
         const noteId = Math.random().toString(36).substr(2, 9);
-        localStorage.setItem(noteId, noteContent);
+
+        // Connect to Azure Blob Storage
+        const azureStorageAccountName = 'memonote';
+        const azureStorageAccountKey = 'OGIeeIzwsR7dkJJSVhroKhhK5gEDI9kf5xp65uLexQF1Vq34Q07DcWkwylPLzrL+SbZ9SGaTVuS++ASte8EvGg==';
+        const blobServiceClient = new Azure.StorageBlob.BlobServiceClient(
+            `https://$memonote.blob.core.windows.net`,
+            new Azure.StorageBlob.StorageSharedKeyCredential(azureStorageAccountName, azureStorageAccountKey)
+        );
+
+        const containerName = 'notes-container';
+        const containerClient = blobServiceClient.getContainerClient(containerName);
+
+        // Upload note content as a blob
+        const blobName = `${noteId}.txt`;
+        const blobClient = containerClient.getBlobClient(blobName);
+        await blobClient.upload(noteContent, noteContent.length);
 
         // Generate a shareable link
-        const shareLink = `${window.location.origin}?note=${noteId}`;
+        const shareLink = `${window.location.origin}?note=${blobName}`;
         document.getElementById('share-link').value = shareLink;
 
         // Show the share link
@@ -37,12 +52,22 @@ if (typeof document !== 'undefined') {
     });
 
     // Check if the page has a note ID in the URL
-    window.onload = () => {
+    window.onload = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const noteId = urlParams.get('note');
 
         if (noteId) {
-            const noteContent = localStorage.getItem(noteId);
+            // Connect to Azure Blob Storage
+            const azureStorageAccountName = 'memonote';
+            const azureStorageAccountKey = 'OGIeeIzwsR7dkJJSVhroKhhK5gEDI9kf5xp65uLexQF1Vq34Q07DcWkwylPLzrL+SbZ9SGaTVuS++ASte8EvGg==';
+            const blobServiceClient = new Azure.StorageBlob.BlobServiceClient(`https://${azureStorageAccountName}.blob.core.windows.net`,new Azure.StorageBlob.StorageSharedKeyCredential(azureStorageAccountName, azureStorageAccountKey));
+
+            const containerName = 'notes-container';
+            const containerClient = blobServiceClient.getContainerClient(containerName);
+
+            const blobClient = containerClient.getBlobClient(noteId);
+            const downloadBlockBlobResponse = await blobClient.download(0);
+            const noteContent = await new Response(downloadBlockBlobResponse.readableStreamBody).text();
 
             if (noteContent) {
                 document.getElementById('note-content').value = noteContent;
@@ -52,3 +77,4 @@ if (typeof document !== 'undefined') {
         }
     };
 }
+
