@@ -1,42 +1,28 @@
 const { app } = require('@azure/functions');
 
-// Temporary in-memory storage (use a database in production)
-const notesStorage = {};
-
 app.http('saveNote', {
-    methods: ['POST'],
+    methods: ['POST', 'GET'],
     authLevel: 'anonymous',
     handler: async (request, context) => {
-        try {
-            // Parse the incoming request body
-            const { noteId, content } = await request.json();
+        context.log(`Http function processed request for url "${request.url}"`);
 
-            // Validate the input
-            if (!noteId || !content) {
-                return {
-                    status: 400,
-                    body: { error: 'Both noteId and content are required.' },
-                };
+        if (request.method === 'POST') {
+            const { content } = await request.json();
+            const noteId = request.query.get('noteId');
+            // Save the note in your storage solution (e.g., Azure Blob Storage, Azure Cosmos DB)
+            await saveNoteToStorage(noteId, content);
+            return { body: `Note saved with ID: ${noteId}` };
+        } else if (request.method === 'GET') {
+            const noteId = request.query.get('noteId');
+            const noteContent = await getNoteFromStorage(noteId); // Retrieve note from storage
+            if (noteContent) {
+                return { body: { content: noteContent } };
+            } else {
+                return { status: 404, body: 'Note not found' };
             }
-
-            // Save the note in memory
-            notesStorage[noteId] = content;
-
-            // Log for debugging
-            context.log(`Saved note: ${noteId} -> ${content}`);
-
-            // Return success response
-            return {
-                status: 200,
-                body: { message: 'Note saved successfully!', noteId },
-            };
-        } catch (error) {
-            context.log.error('Error processing request:', error);
-
-            return {
-                status: 500,
-                body: { error: 'An internal error occurred. Please try again.' },
-            };
+        } else {
+            return { status: 405, body: 'Method not allowed' };
         }
-    },
+    }
 });
+

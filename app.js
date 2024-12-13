@@ -4,26 +4,8 @@ if (typeof document !== 'undefined') {
     document.getElementById('save-note').addEventListener('click', async () => {
         const noteContent = document.getElementById('note-content').value.trim();
 
-        // Check if the note is empty
         if (!noteContent) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const noteId = urlParams.get('note');
-
-            if (noteId) {
-                // Delete the note from localStorage
-                localStorage.removeItem(noteId);
-                alert('Note deleted successfully!');
-            } else {
-                alert('No note to delete!');
-            }
-
-            // Clear the URL to remove the old noteId
-            window.history.replaceState({}, document.title, window.location.pathname);
-
-            // Hide the share link and clear inputs
-            document.getElementById('note-link').classList.add('hidden');
-            document.getElementById('share-link').value = '';
-            document.getElementById('note-content').value = '';
+            alert('Please write something in the note!');
             return;
         }
 
@@ -70,7 +52,6 @@ if (typeof document !== 'undefined') {
     document.getElementById('copy-link').addEventListener('click', () => {
         const shareLinkInput = document.getElementById('share-link');
 
-        // Select and copy the link
         shareLinkInput.select();
         shareLinkInput.setSelectionRange(0, 99999); // For mobile compatibility
 
