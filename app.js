@@ -1,55 +1,32 @@
 if (typeof document !== 'undefined') {
     document.getElementById('save-note').addEventListener('click', () => {
-        const noteContent = document.getElementById('note-content').value.trim();
+        const noteContent = document.getElementById('note-content').value;
 
-        // Check if the note is empty
-        if (!noteContent) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const noteId = urlParams.get('note');
-
-            if (noteId) {
-                // Delete the note from localStorage
-                localStorage.removeItem(noteId);
-                alert('Note deleted successfully!');
-            } else {
-                alert('No note to delete!');
-            }
-
-            // Hide the share link section and reset the form
-            document.getElementById('note-link').classList.add('hidden');
-            document.getElementById('share-link').value = '';
+        if (!noteContent.trim()) {
+            alert('Please write something in the note!');
             return;
         }
 
-        // Generate or reuse the note ID
-        let noteId;
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('note')) {
-            noteId = urlParams.get('note'); // Use existing ID
-        } else {
-            noteId = btoa(noteContent).substr(0, 9); // Generate a unique ID
-        }
-
-        // Save the note to localStorage
+        // Generate a unique ID for the note
+        const noteId = Math.random().toString(36).substr(2, 9);
         localStorage.setItem(noteId, noteContent);
 
         // Generate a shareable link
         const shareLink = `${window.location.origin}?note=${noteId}`;
         document.getElementById('share-link').value = shareLink;
 
-        // Show the share link section
+        // Show the share link
         document.getElementById('note-link').classList.remove('hidden');
-
-        alert('Note saved successfully!');
     });
 
     document.getElementById('copy-link').addEventListener('click', () => {
         const shareLinkInput = document.getElementById('share-link');
 
-        // Select and copy the shareable link
+        // Select the text in the input field
         shareLinkInput.select();
         shareLinkInput.setSelectionRange(0, 99999); // For mobile compatibility
 
+        // Copy the text to the clipboard
         navigator.clipboard.writeText(shareLinkInput.value)
             .then(() => {
                 alert('Link copied to clipboard!');
@@ -69,11 +46,8 @@ if (typeof document !== 'undefined') {
 
             if (noteContent) {
                 document.getElementById('note-content').value = noteContent;
-                const shareLink = `${window.location.origin}?note=${noteId}`;
-                document.getElementById('share-link').value = shareLink;
-                document.getElementById('note-link').classList.remove('hidden');
             } else {
-                alert('Note not found or has been deleted!');
+                alert('Note not found!');
             }
         }
     };

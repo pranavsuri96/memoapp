@@ -28,7 +28,6 @@ main {
   border-radius: 4px;
   padding: 0.5rem;
   font-size: 1rem;
-  resize: none;
 }
 
 #note-creation button {
@@ -86,3 +85,4 @@ footer {
   color: white;
   margin-top: 2rem;
 }
+
