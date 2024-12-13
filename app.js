@@ -15,6 +15,9 @@ if (typeof document !== 'undefined') {
                 alert('No note to delete!');
             }
 
+            // Clear the URL to remove the old noteId
+            window.history.replaceState({}, document.title, window.location.pathname);
+
             // Hide the share link and clear inputs
             document.getElementById('note-link').classList.add('hidden');
             document.getElementById('share-link').value = '';
@@ -22,13 +25,15 @@ if (typeof document !== 'undefined') {
             return;
         }
 
-        // Generate or reuse a note ID
+        // Generate a new note ID if the current note is deleted or no note exists in the URL
         let noteId;
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('note')) {
+        if (urlParams.has('note') && localStorage.getItem(urlParams.get('note'))) {
             noteId = urlParams.get('note'); // Reuse existing note ID
         } else {
             noteId = Math.random().toString(36).substr(2, 9); // Generate new note ID
+            // Update the URL with the new noteId
+            window.history.replaceState({}, document.title, `?note=${noteId}`);
         }
 
         // Save note to localStorage
@@ -74,6 +79,8 @@ if (typeof document !== 'undefined') {
                 document.getElementById('note-link').classList.remove('hidden');
             } else {
                 alert('Note not found or has been deleted!');
+                // Clear the URL if the note doesn't exist
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
     };
