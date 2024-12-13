@@ -1,47 +1,55 @@
 if (typeof document !== 'undefined') {
-    document.getElementById('save-note').addEventListener('click', async () => {
-        const noteContent = document.getElementById('note-content').value;
+    document.getElementById('save-note').addEventListener('click', () => {
+        const noteContent = document.getElementById('note-content').value.trim();
 
-        if (!noteContent.trim()) {
-            alert('Please write something in the note!');
+        // Check if the note is empty
+        if (!noteContent) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const noteId = urlParams.get('note');
+
+            if (noteId) {
+                // Delete the note from localStorage
+                localStorage.removeItem(noteId);
+                alert('Note deleted successfully!');
+            } else {
+                alert('No note to delete!');
+            }
+
+            // Hide the share link section and reset the form
+            document.getElementById('note-link').classList.add('hidden');
+            document.getElementById('share-link').value = '';
             return;
         }
 
-        // Generate a unique ID for the note
-        const noteId = Math.random().toString(36).substr(2, 9);
+        // Generate or reuse the note ID
+        let noteId;
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('note')) {
+            noteId = urlParams.get('note'); // Use existing ID
+        } else {
+            noteId = btoa(noteContent).substr(0, 9); // Generate a unique ID
+        }
 
-        // Connect to Azure Blob Storage
-        const azureStorageAccountName = 'memonote';
-        const azureStorageAccountKey = 'OGIeeIzwsR7dkJJSVhroKhhK5gEDI9kf5xp65uLexQF1Vq34Q07DcWkwylPLzrL+SbZ9SGaTVuS++ASte8EvGg==';
-        const blobServiceClient = new Azure.StorageBlob.BlobServiceClient(
-            `https://${azureStorageAccountName}.blob.core.windows.net`,
-            new Azure.StorageBlob.StorageSharedKeyCredential(azureStorageAccountName, azureStorageAccountKey)
-        );
-
-        const containerName = 'notes-container';
-        const containerClient = blobServiceClient.getContainerClient(containerName);
-
-        // Upload note content as a blob
-        const blobName = `${noteId}.txt`;
-        const blobClient = containerClient.getBlobClient(blobName);
-        await blobClient.upload(noteContent, noteContent.length);
+        // Save the note to localStorage
+        localStorage.setItem(noteId, noteContent);
 
         // Generate a shareable link
-        const shareLink = `${window.location.origin}?note=${blobName}`;
+        const shareLink = `${window.location.origin}?note=${noteId}`;
         document.getElementById('share-link').value = shareLink;
 
-        // Show the share link
+        // Show the share link section
         document.getElementById('note-link').classList.remove('hidden');
+
+        alert('Note saved successfully!');
     });
 
     document.getElementById('copy-link').addEventListener('click', () => {
         const shareLinkInput = document.getElementById('share-link');
 
-        // Select the text in the input field
+        // Select and copy the shareable link
         shareLinkInput.select();
         shareLinkInput.setSelectionRange(0, 99999); // For mobile compatibility
 
-        // Copy the text to the clipboard
         navigator.clipboard.writeText(shareLinkInput.value)
             .then(() => {
                 alert('Link copied to clipboard!');
@@ -52,27 +60,20 @@ if (typeof document !== 'undefined') {
     });
 
     // Check if the page has a note ID in the URL
-    window.onload = async () => {
+    window.onload = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const noteId = urlParams.get('note');
 
         if (noteId) {
-            // Connect to Azure Blob Storage
-            const azureStorageAccountName = 'memonote';
-            const azureStorageAccountKey = 'OGIeeIzwsR7dkJJSVhroKhhK5gEDI9kf5xp65uLexQF1Vq34Q07DcWkwylPLzrL+SbZ9SGaTVuS++ASte8EvGg==';
-            const blobServiceClient = StorageBlob.BlobServiceClient(`https://${azureStorageAccountName}.blob.core.windows.net`, new Azure.StorageBlob.StorageSharedKeyCredential(azureStorageAccountName, azureStorageAccountKey));
-
-            const containerName = 'notes-container';
-            const containerClient = blobServiceClient.getContainerClient(containerName);
-
-            const blobClient = containerClient.getBlobClient(noteId);
-            const downloadBlockBlobResponse = await blobClient.download(0);
-            const noteContent = await new Response(downloadBlockBlobResponse.readableStreamBody).text();
+            const noteContent = localStorage.getItem(noteId);
 
             if (noteContent) {
                 document.getElementById('note-content').value = noteContent;
+                const shareLink = `${window.location.origin}?note=${noteId}`;
+                document.getElementById('share-link').value = shareLink;
+                document.getElementById('note-link').classList.remove('hidden');
             } else {
-                alert('Note not found!');
+                alert('Note not found or has been deleted!');
             }
         }
     };
