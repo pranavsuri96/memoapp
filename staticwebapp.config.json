@@ -1,9 +1,8 @@
 {
-    "routes": [
-      {
-        "route": "/api/*",
-        "allowedRoles": ["anonymous"]
-      }
-    ]
+  "$schema": "https://staticwebapp.azureedge.net/schema/v1.json",
+  "functions": {
+    "routes": {
+      "/api/**": "https://salmon-dune-0a4bac010.4.azurestaticapps.net/api"
+    }
   }
-  
+}
