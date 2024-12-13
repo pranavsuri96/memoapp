@@ -34,8 +34,8 @@ jobs:
         id: idtoken
         with:
           script: |
-            const core = require('@actions/core');
-            return await core.getIDToken();
+            const coreActions = require('@actions/core');
+            return await coreActions.getIDToken();
           result-encoding: string
 
       # Build and Deploy to Azure Static Web Apps
