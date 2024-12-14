@@ -47,7 +47,6 @@ jobs:
           app_location: "/" # Root directory for your app source code
           api_location: "api/*" # API folder path
           output_location: "" # Directory with built app content
-          skip_deploy_on_missing_secrets: true # Skip deployment if secrets are missing
           action: "upload" # Explicitly specifying the deployment action
 
   close_pull_request_job:
@@ -60,5 +59,8 @@ jobs:
         id: closepullrequest
         uses: Azure/static-web-apps-deploy@v1
         with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_SALMON_DUNE_0A4BAC010 }}
+          app_location: "/" # Root directory for your app source code
+          api_location: "api/*" # API folder path
+          output_location: "" # Directory with built app content
           action: "close" # Explicitly specifying the close action
-          skip_deploy_on_missing_secrets: true # Skip deployment if secrets are missing
