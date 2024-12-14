@@ -1,67 +1,87 @@
+// Check if the environment is supported (browser-based)
 if (typeof document !== 'undefined') {
-    document.getElementById('save-note').addEventListener('click', () => {
-        const noteContent = document.getElementById('note-content').value.trim();
+    // Replace the localStorage logic with Azure Table Storage integration
+    document.getElementById('save-note').addEventListener('click', async () => {
+        const noteContent = document.getElementById('note-content').value;
 
-        if (!noteContent) {
+        if (!noteContent.trim()) {
             alert('Please write something in the note!');
             return;
         }
 
-        // Generate a new note ID if the current note is deleted or no note exists in the URL
-        let noteId;
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('note') && localStorage.getItem(urlParams.get('note'))) {
-            noteId = urlParams.get('note'); // Reuse existing note ID
-        } else {
-            noteId = Math.random().toString(36).substr(2, 9); // Generate new note ID
-            // Update the URL with the new noteId
-            window.history.replaceState({}, document.title, `?note=${noteId}`);
+        // Generate a unique ID for the note
+        const noteId = Math.random().toString(36).substr(2, 9);
+
+        try {
+            // Set up the connection to Azure Table Storage
+            const azure = require('@azure/data-tables');
+            const tableService = new azure.TableServiceClient(
+                process.env.AZURE_TABLE_STORAGE_CONNECTION_STRING
+            );
+
+            // Define the table and the note entity
+            const tableName = "NotesTable"; // Your table name
+            const entity = {
+                partitionKey: "notes",
+                rowKey: noteId,
+                content: noteContent
+            };
+
+            // Insert the entity into the Azure Table
+            await tableService.createEntity(tableName, entity);
+
+            // Generate a shareable link
+            const shareLink = `${window.location.origin}?note=${noteId}`;
+            document.getElementById('share-link').value = shareLink;
+
+            // Show the share link
+            document.getElementById('note-link').classList.remove('hidden');
+            alert('Note saved successfully!');
+        } catch (error) {
+            console.error('Error saving note:', error);
+            alert('Failed to save note!');
         }
-
-        // Save note to localStorage
-        localStorage.setItem(noteId, noteContent);
-
-        // Generate shareable link
-        const shareLink = `${window.location.origin}?note=${noteId}`;
-        document.getElementById('share-link').value = shareLink;
-
-        // Show the share link section
-        document.getElementById('note-link').classList.remove('hidden');
-        alert('Note saved successfully!');
     });
 
-    document.getElementById('copy-link').addEventListener('click', () => {
+    document.getElementById('copy-link').addEventListener('click', async () => {
         const shareLinkInput = document.getElementById('share-link');
 
+        // Select the text in the input field
         shareLinkInput.select();
         shareLinkInput.setSelectionRange(0, 99999); // For mobile compatibility
 
-        navigator.clipboard.writeText(shareLinkInput.value)
-            .then(() => {
-                alert('Link copied to clipboard!');
-            })
-            .catch(err => {
-                console.error('Could not copy text: ', err);
-            });
+        // Copy the text to the clipboard
+        try {
+            await navigator.clipboard.writeText(shareLinkInput.value);
+            alert('Link copied to clipboard!');
+        } catch (err) {
+            console.error('Could not copy text: ', err);
+        }
     });
 
-    // Load note if the page URL contains a note ID
-    window.onload = () => {
+    // Check if the page has a note ID in the URL
+    window.onload = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const noteId = urlParams.get('note');
 
         if (noteId) {
-            const noteContent = localStorage.getItem(noteId);
+            try {
+                const azure = require('@azure/data-tables');
+                const tableService = new azure.TableServiceClient(
+                    process.env.AZURE_TABLE_STORAGE_CONNECTION_STRING
+                );
 
-            if (noteContent) {
-                document.getElementById('note-content').value = noteContent;
-                const shareLink = `${window.location.origin}?note=${noteId}`;
-                document.getElementById('share-link').value = shareLink;
-                document.getElementById('note-link').classList.remove('hidden');
-            } else {
-                alert('Note not found or has been deleted!');
-                // Clear the URL if the note doesn't exist
-                window.history.replaceState({}, document.title, window.location.pathname);
+                const tableName = "NotesTable"; // Your table name
+                const entity = await tableService.getEntity(tableName, "notes", noteId);
+
+                if (entity) {
+                    document.getElementById('note-content').value = entity.content;
+                } else {
+                    alert('Note not found!');
+                }
+            } catch (error) {
+                console.error('Error loading note:', error);
+                alert('Failed to load note!');
             }
         }
     };
