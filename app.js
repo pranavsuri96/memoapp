@@ -1,89 +1,91 @@
-if (typeof document !== 'undefined') {
-    const apiManagementBaseUrl = 'https://memonote.azure-api.net/api';
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const { BlobServiceClient } = require('@azure/storage-blob');
+require('dotenv').config();
 
-    document.getElementById('save-note').addEventListener('click', () => {
-        const noteContent = document.getElementById('note-content').value;
+const app = express();
+const port = process.env.PORT || 3000;
 
-        if (!noteContent.trim()) {
-            alert('Please write something in the note!');
-            return;
+// Middleware
+app.use(bodyParser.json());
+app.use(cors());
+
+// Azure Blob Storage setup
+const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+const containerName = 'memonoteblob'; // Name of your Blob container
+const containerClient = blobServiceClient.getContainerClient(containerName);
+
+// Ensure the container exists
+async function ensureContainerExists() {
+    try {
+        const exists = await containerClient.exists();
+        if (!exists) {
+            await containerClient.create();
+            console.log(`Container "${containerName}" created.`);
+        } else {
+            console.log(`Container "${containerName}" already exists.`);
         }
-
-        // Generate a unique ID for the note
-        const noteId = Math.random().toString(36).substr(2, 9);
-
-        // Send note data to the API Management backend
-        fetch(`${apiManagementBaseUrl}/notes`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'api-key': 'f1ea90bbb3454b2696486b9b5fd1a0e0' // Replace 'Your-API-Key' with your actual API key
-            },
-            body: JSON.stringify({ id: noteId, content: noteContent })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to save note');
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Generate shareable link
-            const shareLink = `${window.location.origin}?note=${noteId}`;
-            document.getElementById('share-link').value = shareLink;
-
-            // Show the share link
-            document.getElementById('note-link').classList.remove('hidden');
-        })
-        .catch(err => {
-            console.error('Error saving note:', err);
-            alert('Failed to save note!');
-        });
-    });
-
-    document.getElementById('copy-link').addEventListener('click', () => {
-        const shareLinkInput = document.getElementById('share-link');
-
-        // Select the text in the input field
-        shareLinkInput.select();
-        shareLinkInput.setSelectionRange(0, 99999); // For mobile compatibility
-
-        // Copy the text to the clipboard
-        navigator.clipboard.writeText(shareLinkInput.value)
-            .then(() => {
-                alert('Link copied to clipboard!');
-            })
-            .catch(err => {
-                console.error('Could not copy text: ', err);
-            });
-    });
-
-    // Check if the page has a note ID in the URL
-    window.onload = () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const noteId = urlParams.get('note');
-
-        if (noteId) {
-            // Fetch note from API Management backend
-            fetch(`${apiManagementBaseUrl}/notes/${noteId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'api-key': 'Your-API-Key' // Replace 'Your-API-Key' with your actual API key
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data) {
-                    document.getElementById('note-content').value = data.content;
-                } else {
-                    alert('Note not found!');
-                }
-            })
-            .catch(err => {
-                console.error('Error loading note:', err);
-                alert('Failed to load note!');
-            });
-        }
-    };
+    } catch (error) {
+        console.error('Error ensuring container existence:', error);
+        process.exit(1); // Exit if the container setup fails
+    }
 }
+ensureContainerExists();
+
+// API to save a note
+app.post('/api/notes', async (req, res) => {
+    const { id, content } = req.body;
+
+    if (!id || !content) {
+        return res.status(400).json({ error: 'Invalid input: Note ID and content are required.' });
+    }
+
+    try {
+        const blockBlobClient = containerClient.getBlockBlobClient(`${id}.txt`);
+        await blockBlobClient.upload(content, Buffer.byteLength(content));
+        console.log(`Note with ID "${id}" saved successfully.`);
+        res.status(200).json({ message: 'Note saved successfully', id });
+    } catch (error) {
+        console.error('Error saving note:', error);
+        res.status(500).json({ error: 'Failed to save note' });
+    }
+});
+
+// API to retrieve a note
+app.get('/api/notes/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const blockBlobClient = containerClient.getBlockBlobClient(`${id}.txt`);
+        const downloadResponse = await blockBlobClient.download();
+        const content = await streamToString(downloadResponse.readableStreamBody);
+
+        console.log(`Note with ID "${id}" retrieved successfully.`);
+        res.status(200).json({ id, content });
+    } catch (error) {
+        console.error(`Error retrieving note with ID "${id}":`, error);
+        res.status(404).json({ error: 'Note not found' });
+    }
+});
+
+// Helper function to convert stream to string
+async function streamToString(readableStream) {
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        readableStream.on('data', (data) => chunks.push(data.toString()));
+        readableStream.on('end', () => resolve(chunks.join('')));
+        readableStream.on('error', reject);
+    });
+}
+
+// Health Check Endpoint
+app.get('/', (req, res) => {
+    res.status(200).send('Server is running and healthy.');
+});
+
+// Start the server
+app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+});
+
