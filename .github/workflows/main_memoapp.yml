@@ -60,5 +60,4 @@ jobs:
         with:
           app-name: 'memoapp'
           slot-name: 'Production'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          deployment_action: 'deploy' # Ensure this is correctly set to 'deploy', 'build', or 'release'
+          package: .
