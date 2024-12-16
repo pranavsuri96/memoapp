@@ -55,10 +55,10 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CCE8E2072B7442EFB451525C1F6A7794 }}
           allow-no-subscription: false
 
-      # - name: 'Run Azure Functions Action'
-      #   uses: Azure/functions-action@v1
-      #   with:
-      #     app-name: 'memoapp'
-      #     slot-name: 'Production'
-      #     package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-      #     deployment_action: 'deploy' # Ensure this is correctly set to 'deploy', 'build', or 'release'
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        with:
+          app-name: 'memoapp'
+          slot-name: 'Production'
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          deployment_action: 'deploy' # Ensure this is correctly set to 'deploy', 'build', or 'release'

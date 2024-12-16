@@ -28,3 +28,4 @@ jobs:
           app_location: "/" # Path to the app
           api_location: ""  # Path to the API
           output_location: "build" # Built app output directory
+          deployment_action: 'deploy' # Ensure this is correctly set to 'deploy', 'build', or 'release'
