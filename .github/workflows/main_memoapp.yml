@@ -61,4 +61,4 @@ jobs:
           app-name: 'memoapp'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          deployment_action: 'upload'
+          deployment_action: 'deploy' # Try 'deploy', 'build', or 'release' if 'upload' does not work
