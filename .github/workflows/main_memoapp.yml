@@ -33,7 +33,7 @@ jobs:
         with:
           name: node-app
           path: .
-  
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -55,7 +55,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           allow-no-subscription: false
 
-      - name: 'Deploy to Azure Function App'
+      - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
         with:
           app-name: 'memoapp'
